@@ -6,6 +6,7 @@ store, speaker ID) sits behind one of these ports. Ports import only from
 """
 
 from jarvis.ports.brain import Brain, BrainResult, Budget, Usage
+from jarvis.ports.events import EventPublisher
 from jarvis.ports.home_assistant import Area, Entity, HomeAssistant
 from jarvis.ports.notifier import Notifier
 from jarvis.ports.speaker_id import AudioRef, SpeakerIdentifier
@@ -19,6 +20,7 @@ __all__ = [
     "BrainResult",
     "Budget",
     "Entity",
+    "EventPublisher",
     "HomeAssistant",
     "Notifier",
     "SpeakerIdentifier",

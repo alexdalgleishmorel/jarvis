@@ -56,6 +56,11 @@ def test_ports_import_only_stdlib_domain_and_ports():
     assert not offenders, "ports boundary violated:\n" + "\n".join(offenders)
 
 
+def test_services_import_only_stdlib_domain_and_ports():
+    offenders = _offenders("jarvis/services", ("jarvis.domain", "jarvis.ports"))
+    assert not offenders, "services boundary violated:\n" + "\n".join(offenders)
+
+
 def test_adapters_do_not_import_app_services_or_sibling_adapters():
     """Adapters depend on ports, never on each other / on app / on services
     (README §13). Third-party imports are allowed here."""

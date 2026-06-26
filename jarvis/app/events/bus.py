@@ -22,7 +22,7 @@ import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 
-from jarvis.app.events.events import Event
+from jarvis.domain.events import Event
 
 __all__ = ["EventBus", "EventHandler"]
 
