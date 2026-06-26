@@ -58,8 +58,9 @@ services:
     image: rhasspy/wyoming-openwakeword:latest
     container_name: jarvis-listener
     restart: unless-stopped
-    # The "Jarvis" wake-word model is chosen in #19; ok_nabu is a placeholder.
-    command: ["--preload-model", "ok_nabu"]
+    # openWakeWord ships a built-in "hey_jarvis" model (#19) — no custom training
+    # to start. Tune / train a "Jarvis"-only model later if false-accepts are high.
+    command: ["--preload-model", "hey_jarvis"]
     ports:
       - "10400:10400"
 

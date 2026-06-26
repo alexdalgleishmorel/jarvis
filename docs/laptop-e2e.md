@@ -1,0 +1,106 @@
+# Laptop end-to-end runbook
+
+Goal: a full voice round-trip on your laptop — **say something → Jarvis answers out
+loud** — using the laptop as both mic and speaker. Two tiers:
+
+- **Tier 1 (do first):** Home Assistant **browser Assist** (click-to-talk). Exercises
+  STT → conductor → brain → TTS through your laptop speakers. Skips the wake word.
+- **Tier 2:** a native **Wyoming satellite** for the "hey jarvis" wake word.
+
+> **macOS caveat:** Docker Desktop on macOS has no host-audio access, so the *mic*
+> can't live in a container. Browser Assist (Tier 1) sidesteps this; the Tier-2
+> satellite runs natively on the Mac, not in Docker.
+
+---
+
+## 1. Bring up the stack (echo brain — no tokens)
+
+```bash
+cp .env.example .env          # JARVIS_HA_TOKEN can stay blank for now
+docker compose up -d --build  # conductor + Home Assistant + Wyoming (whisper/piper/openwakeword)
+docker compose ps             # all healthy?
+curl -s localhost:8000/healthz   # {"status":"ok"}
+```
+
+The conductor defaults to `JARVIS_BRAIN_MODE=echo` (tokenless) and
+`JARVIS_TTS_MODE=null` (HA's pipeline speaks the reply).
+
+## 2. Configure Home Assistant
+
+Open `http://localhost:8123`, finish onboarding, then:
+
+1. **Wyoming services** — Settings → Devices & Services → **Add Integration → Wyoming
+   Protocol**, once each:
+   - `wyoming-whisper` : `10300`  (speech-to-text)
+   - `wyoming-piper`   : `10200`  (text-to-speech)
+   - `wyoming-openwakeword` : `10400`  (wake word)
+2. **Jarvis agent** — Add Integration → **"Jarvis Conductor"** → URL `http://conductor:8000`.
+3. **Assistant** — Settings → **Voice assistants** → (create/edit one):
+   - Conversation agent → **Jarvis**
+   - Speech-to-text → faster-whisper · Text-to-speech → Piper
+   - Wake word (optional, Tier 2) → **hey_jarvis**
+
+## 3. Tier-1 e2e (echo brain)
+
+Click the **Assist** icon (top of the HA sidebar) → microphone → say *"is this thing on?"*.
+Expect it spoken back: **"You said: is this thing on?"** That's the full chain
+(STT → conductor → voice) minus the real brain and wake word.
+
+---
+
+## 4. Box task #18 — validate subscription billing (gates the real brain)
+
+Do this **on the laptop, outside Docker** (the conductor image has no `claude` CLI):
+
+```bash
+echo "$ANTHROPIC_API_KEY"     # must be EMPTY. If set, unset it (it would bill the API account)
+claude login                  # subscription OAuth
+claude -p "say hello in five words" --output-format json   # note total_cost_usd, that it succeeds
+```
+
+Then confirm the headless call drew from the **subscription**, not per-token API:
+- run `claude` interactively and check `/status` (plan + usage window), and
+- check the Anthropic usage dashboard for this host.
+
+Watch it over several calls. **If it draws from the subscription → proceed.** If it
+bills the API, the *only* thing to change is the brain adapter (`billing_mode`); stay
+on echo and tell me.
+
+## 5. Switch on the real brain
+
+Easiest path that has `claude` logged in: run the **conductor natively** (HA + Wyoming
+stay in Docker):
+
+```bash
+docker compose stop conductor          # free the port
+JARVIS_BRAIN_MODE=claude \
+JARVIS_TTS_MODE=null \
+  .venv/bin/uvicorn jarvis.app.main:create_app --factory --host 0.0.0.0 --port 8000
+```
+
+In HA, change the **Jarvis Conductor** integration URL to `http://host.docker.internal:8000`
+(so the HA container reaches the conductor on the host). Now Assist answers real
+questions ("what's on my calendar tomorrow?" once MCP tools are added).
+
+> Running the real brain *inside* Docker instead needs the `claude` CLI + an OAuth
+> token (`claude setup-token`) baked/mounted into the image — a later hardening step.
+
+## 6. Tier-2 — wake word (#19)
+
+`hey_jarvis` is a built-in openWakeWord model (already preloaded by the
+`wyoming-openwakeword` service). To get a true "hey jarvis → …" loop, run a native
+[Wyoming satellite](https://github.com/rhasspy/wyoming-satellite) on the Mac (uses its
+mic/speaker) pointed at the hub, with the assistant's wake word set to `hey_jarvis`.
+If false-accepts are high, train a "Jarvis"-only openWakeWord model later.
+
+---
+
+## Troubleshooting
+
+- **Assist says it can't reach Jarvis** → check the integration URL and `curl
+  localhost:8000/healthz`; container-to-container uses `http://conductor:8000`,
+  host-to-container uses `http://host.docker.internal:8000`.
+- **No audio in the browser** → grant the browser mic permission; check the HA
+  assistant's TTS engine is Piper.
+- **Conductor won't start** → if it exits complaining about `ANTHROPIC_API_KEY`, unset
+  it (subscription billing guard, README §8).
