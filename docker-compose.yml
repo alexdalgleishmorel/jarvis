@@ -45,6 +45,10 @@ services:
       - "8123:8123"
     volumes:
       - ha-config:/config
+      # The Jarvis conversation-agent custom component (bridges Assist → conductor).
+      # After `up`, add the "Jarvis Conductor" integration in HA and select it as
+      # the conversation agent (URL defaults to http://conductor:8000).
+      - ./custom_components/jarvis:/config/custom_components/jarvis:ro
     depends_on:
       - wyoming-openwakeword
       - wyoming-whisper

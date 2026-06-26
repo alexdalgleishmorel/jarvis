@@ -1,0 +1,13 @@
+{
+  "domain": "jarvis",
+  "name": "Jarvis Conductor",
+  "version": "0.1.0",
+  "documentation": "https://github.com/alexdalgleishmorel/jarvis",
+  "issue_tracker": "https://github.com/alexdalgleishmorel/jarvis/issues",
+  "codeowners": ["@alexdalgleishmorel"],
+  "config_flow": true,
+  "integration_type": "service",
+  "iot_class": "local_polling",
+  "dependencies": ["conversation"],
+  "requirements": []
+}

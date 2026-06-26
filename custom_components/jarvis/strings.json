@@ -1,0 +1,17 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Jarvis Conductor",
+        "description": "Connect Home Assistant's Assist to the Jarvis conductor.",
+        "data": {
+          "url": "Conductor URL",
+          "default_area": "Default area (when the device's area is unknown)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Jarvis is already configured."
+    }
+  }
+}
