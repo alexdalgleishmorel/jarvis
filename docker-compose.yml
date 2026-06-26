@@ -1,0 +1,102 @@
+# Jarvis — whole-home voice assistant, single local host (README §11).
+#
+# Topology: the hub (Home Assistant) runs the Assist pipeline using the Wyoming
+# services (listener = openWakeWord, transcriber = faster-whisper, voice = Piper)
+# and forwards anything it can't handle natively to the conductor (this repo),
+# registered as HA's conversation agent.
+#
+# Per-room satellites (mic + speaker) are NOT in this file — they're physical
+# devices (or a Wyoming satellite running natively on a host with audio access;
+# note Docker Desktop on macOS cannot access the mic). Point them at the hub.
+#
+# Billing (README §8): the conductor container is deliberately NOT given
+# ANTHROPIC_API_KEY, so the brain draws from the Claude subscription rather than
+# the per-token API account. Keep it that way.
+
+services:
+  conductor:
+    build: .
+    container_name: jarvis-conductor
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # M1-safe defaults: echo brain (no tokens) + null voice (HA speaks the
+      # reply). Flip JARVIS_BRAIN_MODE=claude once the §8 billing spike (#18)
+      # confirms subscription billing on the box (the claude CLI + an OAuth
+      # token must then be available to this container).
+      JARVIS_BRAIN_MODE: "echo"
+      JARVIS_TTS_MODE: "null"
+      JARVIS_HA_BASE_URL: "http://homeassistant:8123"
+      JARVIS_DEFAULT_AREA: "home"
+      JARVIS_LOG_LEVEL: "INFO"
+    env_file:
+      - .env            # JARVIS_HA_TOKEN, etc. (see .env.example) — NOT ANTHROPIC_API_KEY
+    volumes:
+      - conductor-data:/data
+    depends_on:
+      - homeassistant
+
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: jarvis-hub
+    restart: unless-stopped
+    ports:
+      - "8123:8123"
+    volumes:
+      - ha-config:/config
+    depends_on:
+      - wyoming-openwakeword
+      - wyoming-whisper
+      - wyoming-piper
+
+  wyoming-openwakeword:
+    image: rhasspy/wyoming-openwakeword:latest
+    container_name: jarvis-listener
+    restart: unless-stopped
+    # The "Jarvis" wake-word model is chosen in #19; ok_nabu is a placeholder.
+    command: ["--preload-model", "ok_nabu"]
+    ports:
+      - "10400:10400"
+
+  wyoming-whisper:
+    image: rhasspy/wyoming-faster-whisper:latest
+    container_name: jarvis-transcriber
+    restart: unless-stopped
+    command: ["--model", "tiny-int8", "--language", "en"]
+    volumes:
+      - whisper-data:/data
+    ports:
+      - "10300:10300"
+
+  wyoming-piper:
+    image: rhasspy/wyoming-piper:latest
+    container_name: jarvis-voice
+    restart: unless-stopped
+    command: ["--voice", "en_US-amy-medium"]
+    volumes:
+      - piper-data:/data
+    ports:
+      - "10200:10200"
+
+  # Postgres-ready (README §11): opt in with `--profile postgres` and set
+  # JARVIS_STORE_URL=postgresql+asyncpg://jarvis:jarvis@db:5432/jarvis
+  # (add the asyncpg driver to dependencies). M1 uses SQLite on conductor-data.
+  db:
+    image: postgres:16-alpine
+    container_name: jarvis-db
+    restart: unless-stopped
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_USER: jarvis
+      POSTGRES_PASSWORD: jarvis
+      POSTGRES_DB: jarvis
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  conductor-data:
+  ha-config:
+  whisper-data:
+  piper-data:
+  db-data:
