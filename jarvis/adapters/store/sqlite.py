@@ -13,7 +13,7 @@ this in M3.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import JSON, select
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
@@ -83,13 +83,24 @@ class ConfigRow(Base):
 # ──────────────────────────── row ↔ domain mapping ────────────────────────────
 
 
+def _as_utc(value: datetime | None) -> datetime | None:
+    """SQLite drops tzinfo. We only ever persist UTC, so reattach it on read,
+    keeping the domain's datetimes timezone-aware and comparable to the clock."""
+    if value is None:
+        return None
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
 def _to_session(row: SessionRow) -> Session:
+    created = _as_utc(row.created_at)
+    last_active = _as_utc(row.last_active_at)
+    assert created is not None and last_active is not None  # non-null columns
     return Session(
         id=row.id,
         room_id=row.room_id,
         speaker_id=row.speaker_id,
-        created_at=row.created_at,
-        last_active_at=row.last_active_at,
+        created_at=created,
+        last_active_at=last_active,
         brain_session_id=row.brain_session_id,
     )
 
@@ -103,8 +114,8 @@ def _to_job(row: JobRow) -> Job:
         status=JobStatus(row.status),
         summary=row.summary,
         brain_session_id=row.brain_session_id,
-        created_at=row.created_at,
-        updated_at=row.updated_at,
+        created_at=_as_utc(row.created_at),
+        updated_at=_as_utc(row.updated_at),
     )
 
 
