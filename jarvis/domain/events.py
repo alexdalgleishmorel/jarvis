@@ -1,7 +1,11 @@
-"""The event vocabulary published across the request lifecycle (README §6).
+"""Domain events — the vocabulary published across the request lifecycle (§6).
 
-Every stage publishes one of these. Observers (logging, the future dashboard
-live view) subscribe; they are never in the request's critical path. Each event
+These live in the domain so any producer (a use-case, an adapter) can publish
+them without depending on ``app``. The concrete bus that delivers them is
+infrastructure in ``jarvis.app.events`` behind the ``EventPublisher`` port.
+
+Every stage publishes one of these; observers (logging, the future dashboard
+live view) subscribe and are never in the request's critical path. Each event
 carries the per-utterance ``trace_id`` so a whole flow can be correlated.
 """
 
