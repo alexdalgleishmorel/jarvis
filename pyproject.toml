@@ -45,6 +45,9 @@ packages = ["jarvis"]
 line-length = 100
 target-version = "py312"
 src = ["jarvis", "tests"]
+# The HA custom component is HA-runtime code (imports homeassistant); it's linted
+# by Home Assistant's own tooling, not the conductor's gate.
+extend-exclude = ["custom_components"]
 
 [tool.ruff.lint]
 select = [
