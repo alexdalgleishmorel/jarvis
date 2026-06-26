@@ -1,0 +1,75 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jarvis"
+version = "0.1.0"
+description = "Jarvis — the conductor: a whole-home voice assistant on Claude Code"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Alex Dalgleish-Morel" }]
+
+# Runtime dependencies for the conductor (modular monolith, README §11).
+# The pure domain core (jarvis/domain) imports none of these — only the
+# adapters / app / config layers do.
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "sqlalchemy>=2.0",
+    "httpx>=0.27",
+    "anyio>=4.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
+
+[project.urls]
+Homepage = "https://github.com/alexdalgleishmorel/jarvis"
+
+[tool.hatch.build.targets.wheel]
+packages = ["jarvis"]
+
+# ──────────────────────────── Tooling ────────────────────────────
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["jarvis", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "RUF", # ruff-specific
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["jarvis"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+namespace_packages = true
+explicit_package_bases = true
+# CI type-checks the `jarvis` package only; tests stay untyped for brevity.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q"
