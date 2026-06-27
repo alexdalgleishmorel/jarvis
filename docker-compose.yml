@@ -65,7 +65,7 @@ services:
       - "10400:10400"
 
   wyoming-whisper:
-    image: rhasspy/wyoming-faster-whisper:latest
+    image: rhasspy/wyoming-whisper:latest
     container_name: jarvis-transcriber
     restart: unless-stopped
     command: ["--model", "tiny-int8", "--language", "en"]
