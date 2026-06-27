@@ -1,0 +1,38 @@
+{
+  "_comment": "Desired Home Assistant state, applied by scripts/provision_ha.py (IaC). ${VARS} are substituted from env/.env. Secrets (API keys) must come from env, never be written here. Integration 'title' must match the title HA assigns (Wyoming uses the service name; our flow titles are fixed).",
+  "ha_url": "http://localhost:8123",
+  "integrations": [
+    {
+      "domain": "wyoming",
+      "title": "mlx-whisper",
+      "steps": { "user": { "host": "host.docker.internal", "port": 10301 } }
+    },
+    {
+      "domain": "wyoming",
+      "title": "openwakeword",
+      "steps": { "user": { "host": "wyoming-openwakeword", "port": 10400 } }
+    },
+    {
+      "domain": "jarvis",
+      "title": "Jarvis",
+      "steps": { "user": { "url": "http://conductor:8000", "default_area": "home" } }
+    },
+    {
+      "domain": "elevenlabs",
+      "title": "ElevenLabs",
+      "steps": { "user": { "api_key": "${ELEVENLABS_API_KEY}" } },
+      "options": { "init": { "model": "eleven_flash_v2_5", "voice": "${ELEVENLABS_VOICE}" } }
+    }
+  ],
+  "pipeline": {
+    "name": "Jarvis",
+    "language": "en",
+    "conversation_engine_from": { "domain": "jarvis", "title": "Jarvis", "prefix": "conversation." },
+    "stt_engine_from": { "domain": "wyoming", "title": "mlx-whisper", "prefix": "stt." },
+    "tts_engine_from": { "domain": "elevenlabs", "title": "ElevenLabs", "prefix": "tts." },
+    "tts_voice": "${ELEVENLABS_VOICE}",
+    "wake_word_entity": null,
+    "wake_word_id": null,
+    "preferred": true
+  }
+}
