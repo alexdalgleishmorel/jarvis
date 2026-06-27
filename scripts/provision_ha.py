@@ -169,9 +169,11 @@ class HAWs:
             if msg.get("id") == msg_id and msg.get("type") == "result":
                 if not msg.get("success"):
                     if soft:
-                        return None
+                        return False
                     raise SystemExit(f"WS {payload['type']} failed: {msg.get('error')}")
-                return msg.get("result")
+                # Some commands (e.g. set_preferred) succeed with a null result.
+                result = msg.get("result")
+                return result if result is not None else True
 
     async def close(self) -> None:
         await self._conn.close()
@@ -195,6 +197,12 @@ async def ensure_pipeline(base: str, token: str, desired: dict, entries: list[di
     try:
         entities = await ws.cmd({"type": "config/entity_registry/list"})
         p = desired["pipeline"]
+        listing = await ws.cmd({"type": "assist_pipeline/pipeline/list"})
+        pipelines = listing.get("pipelines", [])
+        existing = next((x for x in pipelines if x["name"] == p["name"]), None)
+
+        # Don't clobber an existing voice when none is specified in config.
+        tts_voice = p.get("tts_voice") or (existing.get("tts_voice") if existing else None)
         fields = {
             "name": p["name"],
             "language": p["language"],
@@ -204,13 +212,10 @@ async def ensure_pipeline(base: str, token: str, desired: dict, entries: list[di
             "stt_language": p["language"],
             "tts_engine": resolve_entity(entities, entries, p["tts_engine_from"]),
             "tts_language": p["language"],
-            "tts_voice": p.get("tts_voice") or None,
+            "tts_voice": tts_voice,
             "wake_word_entity": p.get("wake_word_entity"),
             "wake_word_id": p.get("wake_word_id"),
         }
-        listing = await ws.cmd({"type": "assist_pipeline/pipeline/list"})
-        pipelines = listing.get("pipelines", [])
-        existing = next((x for x in pipelines if x["name"] == p["name"]), None)
 
         if dry:
             print(f"  pipeline '{p['name']}': would {'update' if existing else 'create'} -> "
@@ -229,10 +234,10 @@ async def ensure_pipeline(base: str, token: str, desired: dict, entries: list[di
             print(f"  pipeline '{p['name']}': created")
 
         if p.get("preferred"):
-            res = await ws.cmd(
+            ok = await ws.cmd(
                 {"type": "assist_pipeline/pipeline/set_preferred", "pipeline_id": pid}, soft=True
             )
-            print("  set preferred" if res is not None else
+            print("  set preferred" if ok else
                   "  (could not set preferred via API — set the star in the UI once)")
     finally:
         await ws.close()
