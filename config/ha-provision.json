@@ -13,9 +13,10 @@
       "steps": { "user": { "host": "wyoming-openwakeword", "port": 10400 } }
     },
     {
+      "_note": "url is host.docker.internal:8000 because the conductor runs NATIVELY on the Mac host for the real Claude brain (the subscription credential is in the macOS Keychain, unreachable from a Docker container). Use http://conductor:8000 only when running the conductor inside the compose network (echo/no-real-brain).",
       "domain": "jarvis",
       "title": "Jarvis",
-      "steps": { "user": { "url": "http://conductor:8000", "default_area": "home" } }
+      "steps": { "user": { "url": "http://host.docker.internal:8000", "default_area": "home" } }
     },
     {
       "domain": "elevenlabs",
