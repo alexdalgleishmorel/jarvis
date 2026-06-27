@@ -72,6 +72,20 @@ conductor is untouched (it runs `TTS_MODE=null`; HA speaks the reply).
 Latency note (README §15): cloud TTS adds round-trip time; the flash/turbo models
 keep it low. If a room feels sluggish, prefer those over `multilingual_v2`.
 
+## 3c. Faster, accurate STT — native Apple-Silicon Whisper (recommended)
+
+The Docker transcriber runs Whisper on CPU (slow + inaccurate). On Apple Silicon,
+run it **natively** so it uses the GPU via MLX — ~2s and accurate on a base M1,
+fully local. See `native/whisper/README.md`:
+
+```bash
+native/whisper/install.sh     # installs a launchd service on :10301
+```
+
+Then HA → Add Integration → **Wyoming Protocol** → `host.docker.internal` : `10301`
+→ set the **Jarvis** assistant's Speech-to-text to the new MLX-Whisper entity →
+`docker compose stop wyoming-whisper` to retire the CPU one.
+
 ## 4. Box task #18 — validate subscription billing (gates the real brain)
 
 Do this **on the laptop, outside Docker** (the conductor image has no `claude` CLI):
