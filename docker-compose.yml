@@ -68,7 +68,12 @@ services:
     image: rhasspy/wyoming-whisper:latest
     container_name: jarvis-transcriber
     restart: unless-stopped
-    command: ["--model", "tiny-int8", "--language", "en"]
+    # Model size is the accuracy/latency dial (tiny was far too inaccurate):
+    #   small-int8  — snappy, big jump from tiny
+    #   medium-int8 — noticeably more accurate (current), a bit slower on CPU
+    #   large-v3 / distil-large-v3 — most accurate, slowest on CPU
+    # beam-size 5 improves accuracy on unclear speech.
+    command: ["--model", "medium-int8", "--language", "en", "--beam-size", "5"]
     volumes:
       - whisper-data:/data
     ports:
