@@ -103,9 +103,13 @@ These are load-bearing. Follow them unless this document explicitly says otherwi
    resolver returns the household default; tomorrow a voice-embedding adapter fills it in. Code that
    depends on identity must degrade gracefully when the speaker is unknown.
 
-8. **Local-first, fail-soft.** The voice path (listener/transcriber/voice) is fully local; only the
-   text transcript leaves the network, to Anthropic. When the brain is slow or unavailable, the
+8. **Local-first, fail-soft.** The voice path (listener/transcriber/voice) is fully local by default;
+   only the text transcript leaves the network, to Anthropic. When the brain is slow or unavailable, the
    conductor gives immediate audio feedback and never hangs a room.
+   - *Configurable opt-out:* choosing a cloud TTS/STT engine trades this away — a cloud **voice** (e.g.
+     ElevenLabs, selected as the hub's TTS engine) sends the **response text** to that provider, and a
+     cloud **transcriber** would send the **audio**. This is a deliberate per-engine choice; the shipped
+     default (Piper + faster-whisper) stays fully local. See `docs/laptop-e2e.md`.
 
 9. **Every port has a fake.** Each port ships an in-memory/stub adapter so use-cases are testable
    without the hub, without audio, and without spending tokens.
