@@ -48,6 +48,30 @@ Expect it spoken back: **"You said: is this thing on?"** That's the full chain
 
 ---
 
+## 3b. Natural voice — ElevenLabs (optional, cloud)
+
+Piper is local and fast but synthetic. For a natural, Claude-grade voice, swap the
+hub's TTS engine to **ElevenLabs**. This is a Home Assistant change only — the
+conductor is untouched (it runs `TTS_MODE=null`; HA speaks the reply).
+
+> **Local-first opt-out (README §3.8):** with a cloud voice, the *response text*
+> leaves your network (to ElevenLabs). The audio path (your speech) stays local.
+
+1. **Get a key** — sign up at elevenlabs.io → Profile → **API Keys** → create one
+   (free tier available). **Enter it in Home Assistant only — never commit it.**
+2. **Add the integration** — HA → Settings → Devices & Services → **Add Integration
+   → "ElevenLabs"** → paste the API key →
+   - **Model:** `eleven_flash_v2_5` or `eleven_turbo_v2_5` for low latency (best for
+     an assistant); `eleven_multilingual_v2` for max quality (slower).
+   - **Voice:** pick from the list (browse/preview voices at elevenlabs.io; you can
+     tune stability/similarity in the integration's *Configure* options later).
+3. **Use it** — Settings → **Voice assistants → Jarvis → Text-to-speech → ElevenLabs**
+   → choose the voice → **Save**.
+4. **Test** — Assist → 🎤 → the reply is now spoken in the ElevenLabs voice.
+
+Latency note (README §15): cloud TTS adds round-trip time; the flash/turbo models
+keep it low. If a room feels sluggish, prefer those over `multilingual_v2`.
+
 ## 4. Box task #18 — validate subscription billing (gates the real brain)
 
 Do this **on the laptop, outside Docker** (the conductor image has no `claude` CLI):
