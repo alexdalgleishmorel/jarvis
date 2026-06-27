@@ -52,7 +52,7 @@ names in code, comments, and conversation.
 |------|--------------|-----------------|--------------------|
 | **mic** | Captures your voice in a room | Satellite microphone | assembled |
 | **speaker** | Plays Jarvis's reply in the room | Satellite speaker | assembled |
-| **listener** | Wakes on the word "Jarvis" | openWakeWord | assembled |
+| **listener** | Wakes on the word "Jarvis" | Porcupine ("jarvis") | assembled |
 | **transcriber** | Turns your speech into text | faster-whisper | assembled |
 | **voice** | Turns text answers into speech | Piper | assembled |
 | **hub** | Connects room devices, routes audio to/from the right room, owns physical devices (lights, scenes) | Home Assistant | assembled |
@@ -327,7 +327,7 @@ When adding a feature, the default question is *"which adapter or event does thi
   async in-process event bus. `pytest` with port fakes.
 - **Brain:** Claude Code via the `ClaudeCodeBrain` adapter.
 - **Dashboard:** **React + Vite**, TypeScript.
-- **Assembled (the hub and voice path):** Home Assistant + Wyoming (listener = openWakeWord,
+- **Assembled (the hub and voice path):** Home Assistant + Wyoming (listener = Porcupine,
   transcriber = faster-whisper, voice = Piper), per-room satellites.
 - **Runtime:** Docker Compose on a single local host (hub and Wyoming containers may run on the same
   box or a separate one on the LAN).
@@ -392,7 +392,7 @@ milestones fill adapters in, they don't replace a hacked-together core.
 
 - **mic** — captures your voice in a room.
 - **speaker** — plays Jarvis's reply in the room.
-- **listener** (openWakeWord) — the always-listening ear; ignores everything until it hears "Jarvis."
+- **listener** (Porcupine) — the always-listening ear; ignores everything until it hears "Jarvis."
 - **transcriber** (faster-whisper) — turns your speech into the text sent to the brain.
 - **voice** (Piper) — turns the brain's answer into speech, played on the speaker.
 - **hub** (Home Assistant) — connects the room devices, routes audio to/from the right room, owns
@@ -412,4 +412,4 @@ milestones fill adapters in, they don't replace a hacked-together core.
   everything.
 - Acceptable latency budget for the Q&A path, and whether always-on contention with interactive
   Claude usage is tolerable in practice.
-- Wake word: a custom "Jarvis" openWakeWord model vs an existing community model — pick during M1.
+- Wake word: **resolved** — Porcupine's built-in "jarvis" keyword (openWakeWord only offers "hey jarvis"); runs under x86 emulation on Apple Silicon.
