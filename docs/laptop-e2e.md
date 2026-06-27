@@ -1,5 +1,9 @@
 # Laptop end-to-end runbook
 
+> For the always-on house deployment (dedicated Mac Mini), see
+> [`deploy-mac-mini.md`](./deploy-mac-mini.md). This runbook is for dev/testing on
+> your laptop; the production steps mirror it.
+
 Goal: a full voice round-trip on your laptop — **say something → Jarvis answers out
 loud** — using the laptop as both mic and speaker. Two tiers:
 
