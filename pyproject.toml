@@ -45,9 +45,10 @@ packages = ["jarvis"]
 line-length = 100
 target-version = "py312"
 src = ["jarvis", "tests"]
-# The HA custom component is HA-runtime code (imports homeassistant); the scripts/
-# are on-box diagnostic tools with optional heavy deps. Neither is in the gate.
-extend-exclude = ["custom_components", "scripts"]
+# HA-runtime code (custom_components), on-box diagnostic tools (scripts), and the
+# native host services (native/, e.g. MLX-Whisper) all live outside the gate —
+# they import host-/HA-only deps and run outside the conductor.
+extend-exclude = ["custom_components", "scripts", "native"]
 
 [tool.ruff.lint]
 select = [

@@ -1,0 +1,3 @@
+mlx-whisper
+wyoming>=1.5
+numpy
