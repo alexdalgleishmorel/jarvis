@@ -10,7 +10,7 @@ What runs where:
 | Component | Where | Notes |
 |-----------|-------|-------|
 | hub (Home Assistant) | Docker on the Mini | the conversation pipeline |
-| listener (openWakeWord) | Docker on the Mini | "hey jarvis" |
+| listener (Porcupine) | Docker on the Mini | "jarvis" |
 | transcriber (STT) | **native** on the Mini | MLX-Whisper on the GPU (`native/whisper`) |
 | voice (TTS) | ElevenLabs (cloud) | selected in HA; no local service needed |
 | conductor | Docker on the Mini | this repo |
@@ -90,7 +90,7 @@ then it runs the tokenless echo brain.
 ## 6. Configure Home Assistant
 
 Same as `docs/laptop-e2e.md` §2–3 (Wyoming services, the "Jarvis Conductor"
-agent, ElevenLabs TTS, MLX STT, `hey_jarvis` wake word) — just done once on the
+agent, ElevenLabs TTS, MLX STT, "jarvis" wake word) — just done once on the
 Mini. Generate the HA long-lived token and put it in `.env` as `JARVIS_HA_TOKEN`.
 
 ## 7. Per-room satellites
@@ -98,7 +98,7 @@ Mini. Generate the HA long-lived token and put it in `.env` as `JARVIS_HA_TOKEN`
 The Mini doesn't need to be near you. Each room gets a cheap satellite that
 streams audio to the hub and plays replies — e.g. an ESP32-S3 "Atom Echo", the
 Home Assistant **Voice PE** puck, or a Raspberry Pi running `wyoming-satellite`.
-Point them at the Mini's IP; set their wake word to `hey_jarvis`.
+Point them at the Mini's IP; set their wake word to "jarvis".
 
 ## 8. Operate / update
 

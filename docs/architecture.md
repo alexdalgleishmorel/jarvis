@@ -10,7 +10,7 @@ diagrams. (For the project vision and design principles, see the top-level
 ## 1. What is Jarvis?
 
 Jarvis is a **whole-home voice assistant** that runs on your own network. You say
-"hey jarvis," ask a question in any room, and hear an answer spoken back — with
+"jarvis," ask a question in any room, and hear an answer spoken back — with
 **Claude as the brain**. It's built from small, clearly-named parts so it stays
 understandable as it grows, and so any engine (the voice, the transcriber, even
 the brain) can be swapped without rewriting the system.
@@ -36,7 +36,7 @@ implementation. Swap Claude for something else and it's still the `brain`.
 |------|------|--------------|-------------|
 | **mic** | captures your voice | satellite microphone | (external device) |
 | **speaker** | plays the reply | satellite speaker | (external device) |
-| **listener** | wakes on "hey jarvis" | openWakeWord | (external Wyoming service) |
+| **listener** | wakes on "jarvis" | Porcupine | (external Wyoming service) |
 | **transcriber** | speech → text | MLX-Whisper (Apple Silicon GPU) | [`native/whisper/`](../native/whisper) |
 | **voice** | text → speech | ElevenLabs (cloud) | `TextToSpeech` port → `HaPiper`/`Null` adapters |
 | **hub** | routes audio, owns devices | Home Assistant | `HomeAssistant` port → `HaRestHub` adapter |
@@ -60,7 +60,7 @@ flowchart LR
   user([You]) -->|speak| sat["Satellite<br/>mic + speaker"]
 
   subgraph hub["Hub — Home Assistant"]
-    listener["listener<br/>openWakeWord"]
+    listener["listener<br/>Porcupine"]
     transcriber["transcriber<br/>MLX-Whisper (STT)"]
     pipeline["Assist pipeline"]
     listener --> transcriber --> pipeline
@@ -106,7 +106,7 @@ sequenceDiagram
   participant C as Conductor
   participant B as Brain (Claude)
 
-  U->>S: "hey jarvis, what's the capital of France?"
+  U->>S: "jarvis, what's the capital of France?"
   S->>H: stream audio
   H->>H: listener wakes · transcriber → text
   H->>C: POST /ingress/utterance {text, area}
@@ -295,7 +295,7 @@ flowchart TB
   subgraph host["Always-on host (Mac Mini)"]
     subgraph dock["Docker (compose)"]
       ha["Home Assistant<br/>:8123"]
-      oww["openWakeWord<br/>:10400"]
+      oww["Porcupine (jarvis)<br/>:10400"]
     end
     subgraph nat["Native (launchd / process)"]
       cond["conductor<br/>:8000"]

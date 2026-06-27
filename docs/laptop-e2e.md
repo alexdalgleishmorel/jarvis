@@ -9,7 +9,7 @@ loud** — using the laptop as both mic and speaker. Two tiers:
 
 - **Tier 1 (do first):** Home Assistant **browser Assist** (click-to-talk). Exercises
   STT → conductor → brain → TTS through your laptop speakers. Skips the wake word.
-- **Tier 2:** a native **Wyoming satellite** for the "hey jarvis" wake word.
+- **Tier 2:** a native **Wyoming satellite** for the "jarvis" wake word.
 
 > **macOS caveat:** Docker Desktop on macOS has no host-audio access, so the *mic*
 > can't live in a container. Browser Assist (Tier 1) sidesteps this; the Tier-2
@@ -21,7 +21,7 @@ loud** — using the laptop as both mic and speaker. Two tiers:
 
 ```bash
 cp .env.example .env          # JARVIS_HA_TOKEN can stay blank for now
-docker compose up -d --build  # conductor + Home Assistant + Wyoming (whisper/piper/openwakeword)
+docker compose up -d --build  # conductor + Home Assistant + Wyoming (whisper/piper/porcupine)
 docker compose ps             # all healthy?
 curl -s localhost:8000/healthz   # {"status":"ok"}
 ```
@@ -37,12 +37,12 @@ Open `http://localhost:8123`, finish onboarding, then:
    Protocol**, once each:
    - `wyoming-whisper` : `10300`  (speech-to-text)
    - `wyoming-piper`   : `10200`  (text-to-speech)
-   - `wyoming-openwakeword` : `10400`  (wake word)
+   - `wyoming-porcupine` : `10400`  (wake word — "jarvis")
 2. **Jarvis agent** — Add Integration → **"Jarvis Conductor"** → URL `http://conductor:8000`.
 3. **Assistant** — Settings → **Voice assistants** → (create/edit one):
    - Conversation agent → **Jarvis**
    - Speech-to-text → faster-whisper · Text-to-speech → Piper
-   - Wake word (optional, Tier 2) → **hey_jarvis**
+   - Wake word (optional, Tier 2) → **jarvis**
 
 ## 3. Tier-1 e2e (echo brain)
 
@@ -127,13 +127,28 @@ questions ("what's on my calendar tomorrow?" once MCP tools are added).
 > Running the real brain *inside* Docker instead needs the `claude` CLI + an OAuth
 > token (`claude setup-token`) baked/mounted into the image — a later hardening step.
 
-## 6. Tier-2 — wake word (#19)
+## 6. Tier-2 — wake word ("jarvis")
 
-`hey_jarvis` is a built-in openWakeWord model (already preloaded by the
-`wyoming-openwakeword` service). To get a true "hey jarvis → …" loop, run a native
-[Wyoming satellite](https://github.com/rhasspy/wyoming-satellite) on the Mac (uses its
-mic/speaker) pointed at the hub, with the assistant's wake word set to `hey_jarvis`.
-If false-accepts are high, train a "Jarvis"-only openWakeWord model later.
+The wake word is **"jarvis"**, served by the `wyoming-porcupine` service (a built-in
+Porcupine keyword; openWakeWord only offers "hey jarvis"). Porcupine v1 has no arm64
+build, so on Apple Silicon it runs under x86 emulation (`platform: linux/amd64`).
+
+The wake word only fires from a **continuously-listening satellite** — browser Assist
+is click-to-talk, so it never exercises the wake word. For a real "jarvis → …" loop you
+need a satellite streaming audio to the hub:
+
+- **Hardware (recommended):** an ESP32-S3 "Atom Echo" (~$13) or the Home Assistant
+  **Voice PE** (~$59), flashed with the HA voice-assistant firmware → point at the hub,
+  set its wake word to "jarvis".
+- **Raspberry Pi:** run [wyoming-satellite](https://github.com/rhasspy/wyoming-satellite)
+  on a Pi with a mic/speaker, pointed at the hub.
+
+> A Mac is a poor satellite: `wyoming-satellite` expects Linux ALSA audio, so use
+> hardware (or a Pi) for the voice-activation test. You *can* validate the wake-word
+> *detection* itself on the Mac without a satellite (see "Testing" below).
+
+If "jarvis" gives too many false triggers (a short word is harder than "hey jarvis"),
+lower `--sensitivity` on the `wyoming-porcupine` service in `docker-compose.yml`.
 
 ---
 

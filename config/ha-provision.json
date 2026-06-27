@@ -8,9 +8,10 @@
       "steps": { "user": { "host": "host.docker.internal", "port": 10301 } }
     },
     {
+      "_note": "Wake word = 'jarvis' via Porcupine (a built-in keyword; openWakeWord only has 'hey_jarvis'). The keyword is selected per-satellite from this provider.",
       "domain": "wyoming",
-      "title": "openwakeword",
-      "steps": { "user": { "host": "wyoming-openwakeword", "port": 10400 } }
+      "title": "porcupine1",
+      "steps": { "user": { "host": "wyoming-porcupine", "port": 10400 } }
     },
     {
       "_note": "url is host.docker.internal:8000 because the conductor runs NATIVELY on the Mac host for the real Claude brain (the subscription credential is in the macOS Keychain, unreachable from a Docker container). Use http://conductor:8000 only when running the conductor inside the compose network (echo/no-real-brain).",

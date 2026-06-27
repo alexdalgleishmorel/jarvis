@@ -1,7 +1,7 @@
 # Jarvis — whole-home voice assistant, single local host (README §11).
 #
 # Topology: the hub (Home Assistant) runs the Assist pipeline using the Wyoming
-# services (listener = openWakeWord, transcriber = faster-whisper, voice = Piper)
+# services (listener = Porcupine "jarvis", transcriber = faster-whisper, voice = Piper)
 # and forwards anything it can't handle natively to the conductor (this repo),
 # registered as HA's conversation agent.
 #
@@ -50,17 +50,19 @@ services:
       # the conversation agent (URL defaults to http://conductor:8000).
       - ./custom_components/jarvis:/config/custom_components/jarvis:ro
     depends_on:
-      - wyoming-openwakeword
+      - wyoming-porcupine
       - wyoming-whisper
       - wyoming-piper
 
-  wyoming-openwakeword:
-    image: rhasspy/wyoming-openwakeword:latest
+  wyoming-porcupine:
+    image: rhasspy/wyoming-porcupine1:latest
+    # Porcupine v1 ships no arm64 library, so emulate x86_64 on Apple Silicon.
+    platform: linux/amd64
     container_name: jarvis-listener
     restart: unless-stopped
-    # openWakeWord ships a built-in "hey_jarvis" model (#19) — no custom training
-    # to start. Tune / train a "Jarvis"-only model later if false-accepts are high.
-    command: ["--preload-model", "hey_jarvis"]
+    # Wake word "jarvis" — a built-in Porcupine keyword (no account, no training).
+    # openWakeWord only offers "hey_jarvis"; Porcupine has plain "jarvis".
+    command: ["--uri", "tcp://0.0.0.0:10400", "--system", "linux", "--sensitivity", "0.5"]
     ports:
       - "10400:10400"
 
