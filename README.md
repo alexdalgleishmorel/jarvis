@@ -118,6 +118,10 @@ These are load-bearing. Follow them unless this document explicitly says otherwi
 
 ## 4. System architecture
 
+> **New here?** [`docs/architecture.md`](docs/architecture.md) is a guided, diagram-rich tour of how
+> the system fits together (big picture, request flow, ports & adapters, deployment) — the best
+> starting point for understanding the codebase.
+
 The voice path is assembled, not built: satellites stream audio; the **listener** detects the wake
 word; the **transcriber** converts speech to text; the **voice** speaks replies; the **hub** chains
 these and tracks which room (HA *area*) originated an utterance. The hub handles native
