@@ -95,10 +95,13 @@ Mini. Generate the HA long-lived token and put it in `.env` as `JARVIS_HA_TOKEN`
 
 ## 7. Per-room satellites
 
-The Mini doesn't need to be near you. Each room gets a cheap satellite that
-streams audio to the hub and plays replies — e.g. an ESP32-S3 "Atom Echo", the
-Home Assistant **Voice PE** puck, or a Raspberry Pi running `wyoming-satellite`.
-Point them at the Mini's IP; set their wake word to "jarvis".
+The Mini doesn't need to be near you. Each room gets a satellite that streams
+audio to the hub and plays replies — an M5Stack **Atom Echo** (cheap, for MVP),
+the Home Assistant **Voice PE** (production), or a Raspberry Pi running
+`wyoming-satellite`. Point them at the Mini's IP; wake word "jarvis".
+
+See **[`docs/satellites.md`](./satellites.md)** for device options and
+step-by-step flashing/wiring (Atom Echo MVP + production Voice PE).
 
 ## 8. Operate / update
 
