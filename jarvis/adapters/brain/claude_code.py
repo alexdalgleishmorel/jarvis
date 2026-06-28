@@ -27,21 +27,25 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from enum import Enum
 
 from jarvis.domain.models import Request, Session
-from jarvis.ports.brain import BrainResult, Budget, Usage
+from jarvis.ports.brain import BrainError, BrainRateLimited, BrainResult, Budget, Usage
 
-__all__ = ["BillingMode", "BrainError", "ClaudeCodeBrain"]
+__all__ = ["BillingMode", "BrainError", "BrainRateLimited", "ClaudeCodeBrain"]
 
 # (returncode, stdout, stderr)
 Runner = Callable[[Sequence[str], Mapping[str, str]], Awaitable[tuple[int, str, str]]]
+
+# Substrings that mark a rate/usage limit rather than a generic failure.
+_RATE_LIMIT_HINTS = ("rate limit", "rate_limit", "429", "overloaded", "usage limit", "quota")
+
+
+def _is_rate_limit(text: str) -> bool:
+    low = text.lower()
+    return any(hint in low for hint in _RATE_LIMIT_HINTS)
 
 
 class BillingMode(Enum):
     SUBSCRIPTION = "subscription"
     API_KEY = "api_key"
-
-
-class BrainError(RuntimeError):
-    """The brain invocation failed. Caught by handle_utterance's fail-soft path."""
 
 
 async def _subprocess_runner(args: Sequence[str], env: Mapping[str, str]) -> tuple[int, str, str]:
@@ -115,7 +119,10 @@ class ClaudeCodeBrain:
         args = self._build_args(request, session, tools, model, budget)
         returncode, stdout, stderr = await self._runner(args, self._env())
         if returncode != 0:
-            raise BrainError(f"claude exited {returncode}: {stderr.strip()}")
+            message = f"claude exited {returncode}: {stderr.strip()}"
+            if _is_rate_limit(stderr) or _is_rate_limit(stdout):
+                raise BrainRateLimited(message)
+            raise BrainError(message)
         return _parse_result(stdout)
 
 
@@ -126,7 +133,11 @@ def _parse_result(stdout: str) -> BrainResult:
         raise BrainError(f"could not parse brain output: {exc}") from exc
 
     if data.get("is_error"):
-        raise BrainError(str(data.get("result") or "brain reported is_error"))
+        message = str(data.get("result") or "brain reported is_error")
+        status = str(data.get("api_error_status") or "")
+        if _is_rate_limit(message) or _is_rate_limit(status):
+            raise BrainRateLimited(message)
+        raise BrainError(message)
 
     usage_raw = data.get("usage") or {}
     usage = Usage(

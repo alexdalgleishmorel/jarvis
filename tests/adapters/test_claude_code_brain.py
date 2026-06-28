@@ -8,6 +8,7 @@ import pytest
 from jarvis.adapters.brain import (
     BillingMode,
     BrainError,
+    BrainRateLimited,
     ClaudeCodeBrain,
     EchoBrain,
 )
@@ -144,6 +145,28 @@ async def test_is_error_payload_raises():
     brain = ClaudeCodeBrain(runner=runner, base_env={})
     with pytest.raises(BrainError, match="model overloaded"):
         await brain.invoke(_request(), _session())
+
+
+async def test_rate_limit_nonzero_exit_raises_rate_limited():
+    runner = RecordingRunner(returncode=1, stderr="API Error: 429 rate limit exceeded")
+    brain = ClaudeCodeBrain(runner=runner, base_env={})
+    with pytest.raises(BrainRateLimited):
+        await brain.invoke(_request(), _session())
+
+
+async def test_rate_limit_is_error_payload_raises_rate_limited():
+    runner = RecordingRunner(stdout=_ok_json(is_error=True, result="overloaded_error"))
+    brain = ClaudeCodeBrain(runner=runner, base_env={})
+    with pytest.raises(BrainRateLimited):
+        await brain.invoke(_request(), _session())
+
+
+async def test_budget_max_turns_added_to_command():
+    runner = RecordingRunner(stdout=_ok_json())
+    brain = ClaudeCodeBrain(runner=runner, base_env={})
+    await brain.invoke(_request(), _session(), model="haiku", budget=Budget(max_turns=6))
+    assert "--max-turns" in runner.args and "6" in runner.args
+    assert "--model" in runner.args and "haiku" in runner.args
 
 
 async def test_echo_brain_echoes_request():
