@@ -31,7 +31,12 @@ class Settings(BaseSettings):
     brain_mode: Literal["echo", "claude"] = "echo"
     billing_mode: Literal["subscription", "api_key"] = "subscription"
     claude_executable: str = "claude"
-    quick_model: str | None = None
+    # Model tiering (README §8): a cheap/fast model for quick Q&A. A stronger model
+    # for async coding jobs lands with that path in M2.
+    quick_model: str | None = "haiku"
+    # Budget guard: per-invocation turn cap (bounds runaway tool loops / cost).
+    max_turns: int | None = 6
+    rate_limit_message: str = "I'm at my limit right now — try me again in a little while."
 
     # Hub (Home Assistant)
     ha_base_url: str = "http://homeassistant.local:8123"

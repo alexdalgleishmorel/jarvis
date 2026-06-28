@@ -27,7 +27,7 @@ from jarvis.domain.events import ResponseReady, UtteranceReceived
 from jarvis.domain.models import Request, Response, Room, Route, Session, Utterance
 from jarvis.domain.routing import RoutingPolicy
 from jarvis.domain.sessions import SessionManager
-from jarvis.ports.brain import Brain, Budget
+from jarvis.ports.brain import Brain, BrainRateLimited, Budget
 from jarvis.ports.events import EventPublisher
 from jarvis.ports.speaker_id import SpeakerIdentifier
 from jarvis.ports.store import Store
@@ -38,6 +38,7 @@ __all__ = ["DEFAULT_FALLBACK_MESSAGE", "HandleUtterance"]
 logger = logging.getLogger("jarvis.services.handle_utterance")
 
 DEFAULT_FALLBACK_MESSAGE = "Sorry, I'm having trouble reaching my brain right now."
+DEFAULT_RATE_LIMIT_MESSAGE = "I'm at my limit right now — try me again in a little while."
 
 
 def _utcnow() -> datetime:
@@ -63,6 +64,7 @@ class HandleUtterance:
         tools: Sequence[str] | None = None,
         budget: Budget | None = None,
         fallback_message: str = DEFAULT_FALLBACK_MESSAGE,
+        rate_limit_message: str = DEFAULT_RATE_LIMIT_MESSAGE,
         clock: Callable[[], datetime] = _utcnow,
         trace_id_factory: Callable[[], str] = _new_trace_id,
     ) -> None:
@@ -77,6 +79,7 @@ class HandleUtterance:
         self._tools = tools
         self._budget = budget
         self._fallback_message = fallback_message
+        self._rate_limit_message = rate_limit_message
         self._clock = clock
         self._trace_id_factory = trace_id_factory
 
@@ -125,16 +128,15 @@ class HandleUtterance:
                 model=self._model,
                 budget=self._budget,
             )
+        except BrainRateLimited:
+            # Quota/rate limit (§8): a distinct, graceful "at my limit" message.
+            logger.warning("brain rate-limited (trace=%s)", trace_id)
+            return await self._speak_failure(request, trace_id, started, self._rate_limit_message)
         except Exception:
             # Fail-soft (§3.8): speak an immediate, graceful fallback. Never hang
             # the room, never re-raise into the request path.
-            latency_ms = (perf_counter() - started) * 1000
             logger.exception("brain invocation failed (trace=%s); speaking fallback", trace_id)
-            await self._tts.speak(self._fallback_message, area=request.room.area)
-            await self._events.publish(
-                ResponseReady(trace_id=trace_id, text=self._fallback_message, latency_ms=latency_ms)
-            )
-            return Response(text=self._fallback_message, trace_id=trace_id, latency_ms=latency_ms)
+            return await self._speak_failure(request, trace_id, started, self._fallback_message)
 
         latency_ms = (perf_counter() - started) * 1000
 
@@ -165,3 +167,14 @@ class HandleUtterance:
             latency_ms=latency_ms,
             brain_session_id=result.brain_session_id,
         )
+
+    async def _speak_failure(
+        self, request: Request, trace_id: str, started: float, message: str
+    ) -> Response:
+        """Speak a graceful message and publish response.ready — never re-raise."""
+        latency_ms = (perf_counter() - started) * 1000
+        await self._tts.speak(message, area=request.room.area)
+        await self._events.publish(
+            ResponseReady(trace_id=trace_id, text=message, latency_ms=latency_ms)
+        )
+        return Response(text=message, trace_id=trace_id, latency_ms=latency_ms)

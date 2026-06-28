@@ -13,7 +13,16 @@ from typing import Protocol, runtime_checkable
 
 from jarvis.domain.models import Request, Session
 
-__all__ = ["Brain", "BrainResult", "Budget", "Usage"]
+__all__ = ["Brain", "BrainError", "BrainRateLimited", "BrainResult", "Budget", "Usage"]
+
+
+class BrainError(RuntimeError):
+    """A brain invocation failed. Caught by handle_utterance's fail-soft path."""
+
+
+class BrainRateLimited(BrainError):
+    """The brain hit a rate/usage limit (README §8). Handled with a distinct,
+    graceful spoken message rather than the generic failure fallback."""
 
 
 @dataclass(frozen=True, slots=True)

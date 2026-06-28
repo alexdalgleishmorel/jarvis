@@ -9,9 +9,11 @@ from jarvis.domain.events import Event
 from jarvis.domain.models import Utterance
 from jarvis.domain.routing import RoutingPolicy
 from jarvis.domain.sessions import SessionManager
+from jarvis.ports.brain import BrainRateLimited
 from jarvis.ports.events import EventPublisher
 from jarvis.services.handle_utterance import (
     DEFAULT_FALLBACK_MESSAGE,
+    DEFAULT_RATE_LIMIT_MESSAGE,
     HandleUtterance,
 )
 from tests.fakes import FakeBrain, Fakes
@@ -104,3 +106,16 @@ async def test_fail_soft_when_brain_errors(fakes: Fakes):
     ready = events[-1]
     assert ready.text == DEFAULT_FALLBACK_MESSAGE
     assert ready.cost is None
+
+
+async def test_rate_limited_speaks_distinct_message(fakes: Fakes):
+    brain = FakeBrain(error=BrainRateLimited("429 rate limit"))
+    use_case = _build(fakes, brain=brain)
+
+    response = await use_case(Utterance(text="anything", area="den"))
+    await fakes.bus.drain()
+
+    # Distinct "at my limit" message, not the generic failure fallback (§8).
+    assert response.text == DEFAULT_RATE_LIMIT_MESSAGE
+    assert response.text != DEFAULT_FALLBACK_MESSAGE
+    assert fakes.tts.spoken == [(DEFAULT_RATE_LIMIT_MESSAGE, "den")]

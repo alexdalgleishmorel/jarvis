@@ -32,7 +32,7 @@ from jarvis.app.observability import configure_logging, new_trace_id, register_e
 from jarvis.domain.models import Response, Utterance
 from jarvis.domain.routing import RoutingPolicy
 from jarvis.domain.sessions import SessionManager
-from jarvis.ports.brain import Brain
+from jarvis.ports.brain import Brain, Budget
 from jarvis.ports.tts import TextToSpeech
 from jarvis.services.handle_utterance import HandleUtterance
 
@@ -89,6 +89,8 @@ async def _build_components(settings: Settings, env: Mapping[str, str]) -> Compo
         store=store,
         events=bus,
         model=settings.quick_model,
+        budget=Budget(max_turns=settings.max_turns) if settings.max_turns else None,
+        rate_limit_message=settings.rate_limit_message,
         trace_id_factory=new_trace_id,
     )
     return Components(handle=handle, store=store, hub=hub)
