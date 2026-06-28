@@ -137,9 +137,10 @@ The wake word only fires from a **continuously-listening satellite** — browser
 is click-to-talk, so it never exercises the wake word. For a real "jarvis → …" loop you
 need a satellite streaming audio to the hub:
 
-- **Hardware (recommended):** an ESP32-S3 "Atom Echo" (~$13) or the Home Assistant
-  **Voice PE** (~$59), flashed with the HA voice-assistant firmware → point at the hub,
-  set its wake word to "jarvis".
+- **Hardware (recommended):** an M5Stack **Atom Echo** (~$13, MVP) or the Home
+  Assistant **Voice PE** (~$59, production), flashed with the HA voice-assistant
+  firmware → point at the hub, wake word "jarvis". Step-by-step:
+  **[`docs/satellites.md`](./satellites.md)**.
 - **Raspberry Pi:** run [wyoming-satellite](https://github.com/rhasspy/wyoming-satellite)
   on a Pi with a mic/speaker, pointed at the hub.
 
